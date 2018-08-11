@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+  db:
+    image: mariadb
+
+    environment:
+      MYSQL_ROOT_PASSWORD: foobar
+      MYSQL_DATABASE: zabbix
+      MYSQL_USER: foo
+      MYSQL_PASSWORD: bar
+
+  agent:
+    image: zabbix/zabbix-agent:alpine-latest
+
+    privileged: true
+
+    environment:
+      ZBX_SERVER_HOST: server
+
+  server:
+    image: zabbix/zabbix-server-mysql:alpine-latest
+
+    depends_on:
+      - db
+      - agent
+    ports:
+      - 10051:10051
+
+    environment:
+      DB_SERVER_HOST: db
+      MYSQL_USER: foo
+      MYSQL_PASSWORD: bar
+
+  frontend:
+    image: zabbix/zabbix-web-nginx-mysql:alpine-latest
+
+    ports:
+      - 4001:80
+
+    depends_on:
+      - server
+
+    environment:
+      ZBX_SERVER_HOST: server
+      DB_SERVER_HOST: db
+      MYSQL_USER: foo
+      MYSQL_PASSWORD: bar
+
+  grafana:
+    image: grafana/grafana
+
+    depends_on:
+      - frontend
+    ports:
+      - 4000:3000
+
+    environment:
+      GF_INSTALL_PLUGINS: alexanderzobnin-zabbix-app
